@@ -1,0 +1,87 @@
+---
+title: "GGPlot Project"
+author: "Olivia & Yulia"
+date: '2022-11-22'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(tidyverse)
+library(kableExtra)
+library(ggthemes)
+library(sjmisc)
+
+setwd("C:/Users/zales/Documents/BSB3/R/Margeurit David/Final Project/")
+
+report2019 <- read.csv("HappinessReport/2019.csv", header = TRUE, sep = ",")
+report2018 <- read.csv("HappinessReport/2018.csv", header = TRUE, sep = ",")
+report2017 <- read.csv("HappinessReport/2017.csv", header = TRUE, sep = ",")
+report2016 <- read.csv("HappinessReport/2016.csv", header = TRUE, sep = ",")
+report2015 <- read.csv("HappinessReport/2015.csv", header = TRUE, sep = ",")
+
+report2019[report2019$Country.or.region=="United States", "Country.or.region"] <- "USA"
+report2019[report2019$Country.or.region=="United Kingdom", "Country.or.region"] <- "UK"
+report2019[report2019$Country.or.region=="Congo (Brazzaville)", "Country.or.region"] <- "Democratic Republic of the Congo"
+report2019[report2019$Country.or.region=="Congo (Kinshasa)", "Country.or.region"] <- "Democratic Republic of the Congo"
+report2019
+
+```
+
+# World Happiness Report {.tabset .tabset-fade}
+
+
+
+
+## Country Map
+
+```{r map, echo=FALSE, message=FALSE, warning=FALSE}
+
+world_map = map_data("world") %>% 
+  filter(! long > 180)
+
+report2019 %>% 
+  ggplot(aes(fill = Score, map_id = Country.or.region)) +
+  geom_map(map = world_map) +
+  expand_limits(x = world_map$long, y = world_map$lat) +
+  coord_map("moll") +
+  theme_map()
+
+```
+
+## Top 10
+
+
+```{r top10, echo=FALSE, message=FALSE, warning=FALSE}
+
+report2019[c(1:10, (nrow(report2019)-9):nrow(report2019)),]  %>% 
+  ggplot(aes(x=reorder(Country.or.region,-Score,sum), y=Score, fill = Score)) +
+  geom_bar(stat="summary", fun="mean") + 
+  coord_flip() +
+  geom_hline(yintercept = mean(report2019$Score))
+
+
+```
+
+
+## France
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+fr19 <- report2019[report2019$Country.or.region == "France",]
+fr18 <- report2018[report2018$Country.or.region == "France",]
+fr17 <- report2017[report2017$Country.or.region == "France",]
+fr16 <- report2016[report2016$Country.or.region == "France",]
+fr15 <- report2015[report2015$Country.or.region == "France",]
+france <- tibble(fr19)
+
+france
+
+countries
+```
+
+#
+
