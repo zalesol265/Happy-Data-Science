@@ -33,7 +33,7 @@ report2019
 # World Happiness Report {.tabset .tabset-fade}
 
 
-
+<!-- comment -->
 
 ## Country Map
 
@@ -80,8 +80,23 @@ france <- tibble(fr19)
 
 france
 
-countries
+data("countries")
+data("mtcars")
 ```
+
+
+## Trends
+
+
+<h2>Countries with the highest progression</h2>
+
+
+## Continent
+
+trends by continent
+- (con) no region data in the dataset
+
+
 
 #
 
