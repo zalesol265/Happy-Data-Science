@@ -63,58 +63,13 @@ report2019[report2019a$Country.or.region=="Congo (Kinshasa)", "Country.or.region
 report2019a
 
 
+
 ```
+
+
+
 
 # World Happiness Report {.tabset .tabset-fade}
-
-
-<!-- comment -->
-
-## Overview
-
-```{r map, echo=FALSE, message=FALSE, warning=FALSE}
-
-world_map = map_data("world") %>% 
-  filter(! long > 180)
-
-report2019a %>% 
-  ggplot(aes(fill = Score, map_id = Country.or.region)) +
-  geom_map(map = world_map) +
-  expand_limits(x = world_map$long, y = world_map$lat) +
-  coord_map("moll") +
-  theme_map()
-
-```
-
-
-insert here - top 3 of each category for 2019
-
-
-
-## Top/Bottom 10
-
-To do:
-
-- Insert two grids of top/bottom scores, usung kaggle gradient coloring]
-
-
-
-```{r top10, echo=FALSE, message=FALSE, warning=FALSE}
-
-report2019[c(1:10, (nrow(report2019)-9):nrow(report2019)),]  %>% 
-  ggplot(aes(x=reorder(Country.or.region,-Score,sum), y=Score, fill = Score)) +
-  geom_bar(stat="summary", fun="mean") + 
-  coord_flip() +
-  geom_hline(yintercept = mean(report2019$Score))
-
-
-
-
-```
-
-
-
-
 
 
 ## France
@@ -128,27 +83,31 @@ france
 
 
 
+
+
 ```
-
-
-## Trends
-
-
-<h2>Countries with the highest progression</h2>
 
 
 ## Continent
 
 trends by continent
+- (con) no region data in the dataset
 
 
-```{r}
-reportTotal
+```{r echo=FALSE, message=FALSE, warning=FALSE }
+
+report2019 <- merge(x=report2019,y=ccodes()[,c('NAME','UNREGION1','continent')], 
+      by.x=c("Country.or.region"), 
+      by.y=c("NAME"),
+      all.x=TRUE)
+
+stats <- report2019 %>% 
+          group_by(continent) %>% 
+          summarize_all(mean)
+stats
+
+
 ```
-
-
-
-## Forecasting
 
 
 #
