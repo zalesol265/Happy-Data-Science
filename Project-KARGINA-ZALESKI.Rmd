@@ -14,7 +14,6 @@ library(kableExtra)
 library(ggthemes)
 library(sjmisc)
 
-setwd("C:/Users/zales/Documents/BSB3/R/Margeurit David/Final Project/")
 
 report2019 <- read.csv("HappinessReport/2019.csv", header = TRUE, sep = ",")
 report2018 <- read.csv("HappinessReport/2018.csv", header = TRUE, sep = ",")
