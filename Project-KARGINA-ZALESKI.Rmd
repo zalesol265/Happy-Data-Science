@@ -3,11 +3,13 @@ title: "GGPlot Project"
 author: "Olivia & Yulia"
 date: '2022-11-22'
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
+knitr::opts_chunk$set(echo = FALSE)
 library(ggplot2)
 library(tidyverse)
 library(kableExtra)
@@ -15,8 +17,11 @@ library(ggthemes)
 library(sjmisc)
 library(raster)
 library(stringr)
+library(flexdashboard)
+library(paletteer)
+library(mgcv)
+library(emojifont)
 
-setwd("C:/Users/zales/Documents/BSB3/R/Margeurit David/Final Project/")
 
 report2019 <- read.csv("HappinessReport/2019.csv", header = TRUE, sep = ",")
 report2018 <- read.csv("HappinessReport/2018.csv", header = TRUE, sep = ",")
@@ -67,7 +72,6 @@ report2019a
 
 # World Happiness Report {.tabset .tabset-fade}
 
-
 <!-- comment -->
 
 ## Overview
@@ -86,18 +90,153 @@ report2019a %>%
 
 ```
 
-
 insert here - top 3 of each category for 2019
 
+#Leaders
 
+```{r leaders, echo=FALSE, warning=FALSE}
+
+score_top3[1] <- report2019a %>% arrange(desc(Score))
+score_top3 <- score_top3 %>% dplyr::select("Country.or.region","Score")
+score_top3 <- score_top3[1:3, 1:2]
+
+createValueBoxes <- function(df, h = 4, w = 6, padding=0.5, rows = 1){
+  
+  boxes = nrow(df) # number of items passed
+    # calculate the grid
+  cols = 3
+    
+  df <- data.frame(
+      x = rep(seq(0, (w+padding)*cols-1, w+padding), times=rows),
+      y = rep(seq(0, (h+padding)*rows-1, h+padding), each=cols),
+      h = rep(h, boxes),
+      w = rep(w, boxes),
+      value = df[[2]],
+      info = df[[1]],
+      font_family = c(rep("fontawesome-webfont", 5),
+                      "EmojiOne"),
+      color = factor(1:3)
+  )
+  
+  ggplot(df, aes(x, y, height = h, width = w, label = info)) +
+      ## Create the tiles using the `color` column
+      geom_tile(aes(fill = color)) +
+      ## Add the numeric values as text in `value` column
+      geom_text(color = "white", fontface = "bold", size = 10,
+                aes(label = value, x = x - 2.9, y = y + 1), hjust = 0) +
+      ## Add the labels for each box stored in the `info` column
+      geom_text(color = "white", fontface = "bold",
+                aes(label = info, x = x - 2.9, y = y - 1), hjust = 0) +
+      coord_fixed() +
+      scale_fill_brewer(type = "qual",palette = "Dark2") +
+      ## Use `geom_text()` to add the icons by specifying the unicode symbol.
+      theme_void() +
+      guides(fill = FALSE)
+}
+createValueBoxes(score_top3)
+
+```
+
+#I.GDP per capita
+
+```{r echo=FALSE}
+
+gdp_top3 <- report2019a %>% arrange(desc(GDP.per.capita))
+gdp_top3 <- gdp_top3 %>% dplyr::select("Country.or.region","GDP.per.capita")
+gdp_top3 <- gdp_top3[1:3, 1:2]
+
+createValueBoxes(gdp_top3)
+
+```
+
+#II.Social support
+
+```{r echo=FALSE}
+
+socsup_top3 <- report2019a %>% arrange(desc(Social.support))
+socsup_top3 <- socsup_top3 %>% dplyr::select("Country.or.region","Social.support")
+socsup_top3 <- socsup_top3[1:3, 1:2]
+
+createValueBoxes(socsup_top3)
+
+```
+
+#III.Healthy life expectency
+
+```{r echo=FALSE}
+
+health_top3 <- report2019a %>% arrange(desc(Healthy.life.expectancy))
+health_top3 <- health_top3 %>% dplyr::select("Country.or.region","Healthy.life.expectancy")
+health_top3 <- health_top3[1:3, 1:2]
+
+createValueBoxes(health_top3)
+
+```
+
+#IV.Freedom to make life choices
+
+```{r echo=FALSE}
+
+freedom_top3 <- report2019a %>% arrange(desc(Freedom.to.make.life.choices))
+freedom_top3 <- freedom_top3 %>% dplyr::select("Country.or.region","Freedom.to.make.life.choices")
+freedom_top3 <- freedom_top3[1:3, 1:2]
+
+createValueBoxes(freedom_top3)
+
+```
+
+#V.Generosity
+
+```{r echo=FALSE}
+
+generosity_top3 <- report2019a %>% arrange(desc(Generosity))
+generosity_top3 <- generosity_top3 %>% dplyr::select("Country.or.region","Generosity")
+generosity_top3 <- generosity_top3[1:3, 1:2]
+
+createValueBoxes(generosity_top3)
+
+```
+
+#V.Perception of corruption
+
+```{r echo=FALSE}
+
+corruption_top3 <- report2019a %>% arrange(desc(Perceptions.of.corruption))
+corruption_top3 <- corruption_top3 %>% dplyr::select("Country.or.region","Perceptions.of.corruption")
+corruption_top3 <- corruption_top3[1:3, 1:2]
+
+createValueBoxes(corruption_top3)
+
+```
 
 ## Top/Bottom 10
 
 To do:
 
-- Insert two grids of top/bottom scores, usung kaggle gradient coloring]
+-   Insert two grids of top/bottom scores, usung kaggle gradient
+    coloring]
+
+```{r topbottom10, echo=FALSE, message=FALSE, warning=FALSE}
+
+topbottomtable <- report2019a[c(1:10, (nrow(report2019a)-9):nrow(report2019a)),]
+
+#Create kabble
+
+kbl(topbottomtable, booktabs = T, linesep = "", align = "c", caption = "Summary Table") %>%
+  kable_styling(full_width = F) %>%
+  kable_styling(font_size = 12, position = "center") %>% 
+  kable_styling(latex_options = "hold_position") %>% 
+  column_spec(4, color = "white", background = spec_color(topbottomtable$Score, end = 0.9, option = "viridis")) %>% 
+  column_spec(5, color = "white", background = spec_color(topbottomtable$GDP.per.capita, end = 0.9, option = "viridis")) %>% 
+  column_spec(6, color = "white", background = spec_color(topbottomtable$Social.support, end = 0.9, option = "viridis")) %>% 
+  column_spec(7, color = "white", background = spec_color(topbottomtable$Healthy.life.expectancy, end = 0.9, option = "viridis")) %>% 
+  column_spec(8, color = "white", background = spec_color(topbottomtable$Freedom.to.make.life.choices, end = 0.9, option = "viridis")) %>% 
+  column_spec(9, color = "white", background = spec_color(topbottomtable$Generosity, end = 0.9, option = "viridis")) %>% 
+  column_spec(10, color = "white", background = spec_color(topbottomtable$Perceptions.of.corruption, end = 0.9, option = "viridis"))
 
 
+
+```
 
 ```{r top10, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -112,13 +251,7 @@ report2019[c(1:10, (nrow(report2019)-9):nrow(report2019)),]  %>%
 
 ```
 
-
-
-
-
-
 ## France
-
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -130,26 +263,32 @@ france
 
 ```
 
-
 ## Trends
-
 
 <h2>Countries with the highest progression</h2>
 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+library(flexdashboard)
+
+
+
+```
 
 ## Continent
 
 trends by continent
 
-
-```{r}
+```{r echo=FALSE}
 reportTotal
 ```
 
-
-
 ## Forecasting
 
+# 
 
-#
+```{r}
+
+
+```
 
