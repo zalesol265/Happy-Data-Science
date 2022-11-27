@@ -9,6 +9,9 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
+
+#Open libraries
+
 knitr::opts_chunk$set(echo = FALSE)
 library(ggplot2)
 library(tidyverse)
@@ -20,8 +23,6 @@ library(stringr)
 library(flexdashboard)
 library(paletteer)
 library(mgcv)
-library(emojifont)
-
 
 report2019 <- read.csv("HappinessReport/2019.csv", header = TRUE, sep = ",")
 report2018 <- read.csv("HappinessReport/2018.csv", header = TRUE, sep = ",")
@@ -76,6 +77,15 @@ report2019a
 
 ## Overview
 
+<h2>Index of Happiness in 2019</h2>
+
+The map below represents the happiness index (answers to the Cantril
+ladder question) of each country, based on the data collected in 2019.
+The most happy countries are shown by the lighter color while the least
+happy countries have a darker shade of blue.
+
+**Happiness Index Map, 2019**
+
 ```{r map, echo=FALSE, message=FALSE, warning=FALSE}
 
 world_map = map_data("world") %>% 
@@ -90,46 +100,70 @@ report2019a %>%
 
 ```
 
-insert here - top 3 of each category for 2019
+By using the map, we can compare the situation between different regions
+and have a glance at the countries' indexes. For example, North America
+seems to be a happier region than Africa and Ukraine is slightly behind
+most other European countries.
 
-#Leaders
+<h2>Recognized leaders</h2>
 
-```{r leaders, echo=FALSE, warning=FALSE}
+It would be nice to know how to improve the situation into your own
+country. Let's look at the examples to follow by determining the leaders
+in each category.
 
-score_top3[1] <- report2019a %>% arrange(desc(Score))
+```{=html}
+<style>
+
+.header{
+  text-align: center;
+}
+
+</style>
+```
+
+<h3 class="header">
+
+Top 3 happiest countries
+
+</h3>
+
+```{r leaders, fig.align='center', echo=FALSE, fig.height=2, warning=FALSE}
+
+#Bring together leaders from each category into one table
+
+score_top3 <- report2019a %>% arrange(desc(Score))
 score_top3 <- score_top3 %>% dplyr::select("Country.or.region","Score")
-score_top3 <- score_top3[1:3, 1:2]
+score_top3 <- score_top3[1:3,]
 
 createValueBoxes <- function(df, h = 4, w = 6, padding=0.5, rows = 1){
   
   boxes = nrow(df) # number of items passed
-    # calculate the grid
+  
+# calculate the grid
   cols = 3
     
   df <- data.frame(
       x = rep(seq(0, (w+padding)*cols-1, w+padding), times=rows),
-      y = rep(seq(0, (h+padding)*rows-1, h+padding), each=cols),
+      y = rep(seq(0, (h)*rows-4)),
       h = rep(h, boxes),
       w = rep(w, boxes),
       value = df[[2]],
       info = df[[1]],
-      font_family = c(rep("fontawesome-webfont", 5),
-                      "EmojiOne"),
       color = factor(1:3)
   )
   
   ggplot(df, aes(x, y, height = h, width = w, label = info)) +
-      ## Create the tiles using the `color` column
+  ## Create the tiles using the `color` column
       geom_tile(aes(fill = color)) +
-      ## Add the numeric values as text in `value` column
+  ## Add the numeric values as text in `value` column
       geom_text(color = "white", fontface = "bold", size = 10,
                 aes(label = value, x = x - 2.9, y = y + 1), hjust = 0) +
-      ## Add the labels for each box stored in the `info` column
+  ## Add the labels for each box stored in the `info` column
       geom_text(color = "white", fontface = "bold",
                 aes(label = info, x = x - 2.9, y = y - 1), hjust = 0) +
       coord_fixed() +
       scale_fill_brewer(type = "qual",palette = "Dark2") +
-      ## Use `geom_text()` to add the icons by specifying the unicode symbol.
+  ## Erase the legend
       theme_void() +
       guides(fill = FALSE)
 }
@@ -137,106 +171,167 @@ createValueBoxes(score_top3)
 
 ```
 
-#I.GDP per capita
+<h3 class="header">
 
-```{r echo=FALSE}
+I. GDP per capita
+
+</h3>
+
+```{r gdp, fig.align='center', echo=FALSE, fig.height=2, warning=FALSE}
 
 gdp_top3 <- report2019a %>% arrange(desc(GDP.per.capita))
 gdp_top3 <- gdp_top3 %>% dplyr::select("Country.or.region","GDP.per.capita")
-gdp_top3 <- gdp_top3[1:3, 1:2]
+gdp_top3 <- gdp_top3[1:3,]
 
 createValueBoxes(gdp_top3)
 
 ```
 
-#II.Social support
+<h3 class="header">
 
-```{r echo=FALSE}
+II.Social support
+
+</h3>
+
+```{r social_sup, fig.align='center', echo=FALSE, fig.height=2, warning=FALSE}
 
 socsup_top3 <- report2019a %>% arrange(desc(Social.support))
 socsup_top3 <- socsup_top3 %>% dplyr::select("Country.or.region","Social.support")
-socsup_top3 <- socsup_top3[1:3, 1:2]
+socsup_top3 <- socsup_top3[1:3,]
 
 createValueBoxes(socsup_top3)
 
 ```
 
-#III.Healthy life expectency
+<h3 class="header">
 
-```{r echo=FALSE}
+III.Healthy life expectancy
+
+</h3>
+
+```{r health, fig.align='center', echo=FALSE, fig.height=2, warning=FALSE}
 
 health_top3 <- report2019a %>% arrange(desc(Healthy.life.expectancy))
 health_top3 <- health_top3 %>% dplyr::select("Country.or.region","Healthy.life.expectancy")
-health_top3 <- health_top3[1:3, 1:2]
+health_top3 <- health_top3[1:3,]
 
 createValueBoxes(health_top3)
 
 ```
 
-#IV.Freedom to make life choices
+<h3 class="header">
 
-```{r echo=FALSE}
+IV.Freedom of choice
+
+</h3>
+
+```{r freedom, fig.align='center', echo=FALSE, fig.height=2, warning=FALSE}
 
 freedom_top3 <- report2019a %>% arrange(desc(Freedom.to.make.life.choices))
 freedom_top3 <- freedom_top3 %>% dplyr::select("Country.or.region","Freedom.to.make.life.choices")
-freedom_top3 <- freedom_top3[1:3, 1:2]
+freedom_top3 <- freedom_top3[1:3,]
 
 createValueBoxes(freedom_top3)
 
 ```
 
-#V.Generosity
+<h3 class="header">
 
-```{r echo=FALSE}
+V.Generosity
+
+</h3>
+
+```{r generosity, fig.align='center', echo=FALSE, fig.height=2, warning=FALSE}
 
 generosity_top3 <- report2019a %>% arrange(desc(Generosity))
 generosity_top3 <- generosity_top3 %>% dplyr::select("Country.or.region","Generosity")
-generosity_top3 <- generosity_top3[1:3, 1:2]
+generosity_top3 <- generosity_top3[1:3,]
 
 createValueBoxes(generosity_top3)
 
 ```
 
-#V.Perception of corruption
+<h3 class="header">
 
-```{r echo=FALSE}
+VI.Perception of corruption
+
+</h3>
+
+```{r corruption, fig.align='center', echo=FALSE, fig.height=2, warning=FALSE}
 
 corruption_top3 <- report2019a %>% arrange(desc(Perceptions.of.corruption))
 corruption_top3 <- corruption_top3 %>% dplyr::select("Country.or.region","Perceptions.of.corruption")
-corruption_top3 <- corruption_top3[1:3, 1:2]
+corruption_top3 <- corruption_top3[1:3,]
 
 createValueBoxes(corruption_top3)
 
 ```
 
-## Top/Bottom 10
+We can see that the leaders change from category to category. In the
+next section the difference between the overall countries' rankings and
+their scores in each categories will be even more present. As for now,
+we can tell that the happiest country would be probably the with GDP per
+capita of Qatar, social support of Iceland, perception of corruption and
+health level of Singapore, freedom of choice of Uzbekistan\*, and
+generosity of Myanmar. We can also see that the leaders in social
+support lead in the overall happiness index as well (even though Denmark
+is not at the top-3, it is the fourth).
 
-To do:
+*\* - As a person from the nearby country I highly question the score of
+Uzbekistan in this category. Therefore,I would advise not to use this
+list as 100% correct example.*
 
--   Insert two grids of top/bottom scores, usung kaggle gradient
-    coloring]
+## Top/bottom analysis
+
+<h2>Comparison between the most happy and the least happy countries</h2>
+
+Do the happiest countries lead in any aspect and wise versa? To find an
+answer to this question, let's look at the table below. It includes the
+comparison between the top and bottom 10 countries by the Happiness
+index (from Finland to Austria and from Haiti to South Sudan).
+
+The best scores overall and for each categories are determined
+separately and highlighted by the background colour, where green
+represents the best scores and violet represents the worst ones.
 
 ```{r topbottom10, echo=FALSE, message=FALSE, warning=FALSE}
 
 topbottomtable <- report2019a[c(1:10, (nrow(report2019a)-9):nrow(report2019a)),]
+topbottomtable <- topbottomtable[,(2:9)]
+
 
 #Create kabble
 
-kbl(topbottomtable, booktabs = T, linesep = "", align = "c", caption = "Summary Table") %>%
+kbl(topbottomtable, booktabs = T, linesep = "", align = "c", 
+    caption = "Distribution of the scores for the best and worst countries", 
+    col.names = c("Country", "Happiness index", "GDP per capita", "Social support", "Healthy life expectancy", "Freedom of choice", "Generosity","Perception of corruption")) %>%
+  
   kable_styling(full_width = F) %>%
   kable_styling(font_size = 12, position = "center") %>% 
   kable_styling(latex_options = "hold_position") %>% 
-  column_spec(4, color = "white", background = spec_color(topbottomtable$Score, end = 0.9, option = "viridis")) %>% 
-  column_spec(5, color = "white", background = spec_color(topbottomtable$GDP.per.capita, end = 0.9, option = "viridis")) %>% 
-  column_spec(6, color = "white", background = spec_color(topbottomtable$Social.support, end = 0.9, option = "viridis")) %>% 
-  column_spec(7, color = "white", background = spec_color(topbottomtable$Healthy.life.expectancy, end = 0.9, option = "viridis")) %>% 
-  column_spec(8, color = "white", background = spec_color(topbottomtable$Freedom.to.make.life.choices, end = 0.9, option = "viridis")) %>% 
-  column_spec(9, color = "white", background = spec_color(topbottomtable$Generosity, end = 0.9, option = "viridis")) %>% 
-  column_spec(10, color = "white", background = spec_color(topbottomtable$Perceptions.of.corruption, end = 0.9, option = "viridis"))
-
+  column_spec(3, color = "white", background = spec_color(topbottomtable$Score, end = 0.9, option = "viridis")) %>% 
+  column_spec(4, color = "white", background = spec_color(topbottomtable$GDP.per.capita, end = 0.9, option = "viridis")) %>% 
+  column_spec(5, color = "white", background = spec_color(topbottomtable$Social.support, end = 0.9, option = "viridis")) %>% 
+  column_spec(6, color = "white", background = spec_color(topbottomtable$Healthy.life.expectancy, end = 0.9, option = "viridis")) %>% 
+  column_spec(7, color = "white", background = spec_color(topbottomtable$Freedom.to.make.life.choices, end = 0.9, option = "viridis")) %>% 
+  column_spec(8, color = "white", background = spec_color(topbottomtable$Generosity, end = 0.9, option = "viridis")) %>% 
+  column_spec(9, color = "white", background = spec_color(topbottomtable$Perceptions.of.corruption, end = 0.9, option = "viridis"))
 
 
 ```
+
+One of the most interesting observations that we can make based on this
+data is that generosity and perception of corruption are distributed
+very differently from all other categories. Haiti, being one of the
+worst countries by the Happiness index, is also one of the leaders by
+Generosity category. On the other hand, happiest countries usually have
+very high GDP, social support, health level, and freedom of choice.
+
+<h2>The difference in happiness level</h2>
+
+We can also take a look at how big the difference in the happiness level
+between the general leaders and the outsider is. A comparison is made in
+the graph below:
 
 ```{r top10, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -250,6 +345,10 @@ report2019[c(1:10, (nrow(report2019)-9):nrow(report2019)),]  %>%
 
 
 ```
+
+It is totally worth noting that the happiest countries are twice as
+happy in comparison to the least happy countries. The division is very
+high, regardless of inequality in distribution between some categories.
 
 ## France
 
@@ -291,4 +390,3 @@ reportTotal
 
 
 ```
-
