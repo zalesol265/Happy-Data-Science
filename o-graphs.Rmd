@@ -5,7 +5,7 @@ date: '2022-11-22'
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE }
 knitr::opts_chunk$set(echo = TRUE)
 
 library(ggplot2)
@@ -64,6 +64,16 @@ report2019a
 
 
 
+reportTotal[reportTotal$Country.or.region=="Congo (Brazzaville)", "Country.or.region"] <- "Democratic Republic of the Congo"
+reportTotal[reportTotal$Country.or.region=="Congo (Kinshasa)", "Country.or.region"] <- "Democratic Republic of the Congo"
+reportTotal[reportTotal$Country.or.region=="Ivory Coast", "Country.or.region"] <- "Côte d'Ivoire"
+reportTotal[reportTotal$Country.or.region=="Palestinian Territories", "Country.or.region"] <- "Palestina"
+reportTotal[reportTotal$Country.or.region=="Trinidad & Tobago", "Country.or.region"] <- "Trinidad and Tobago"
+
+reportTotal[reportTotal$Country.or.region=="North Cyprus", "Country.or.region"] <- "Northern Cyprus"
+reportTotal
+
+
 ```
 
 
@@ -79,19 +89,59 @@ report2019a
 
 france <- reportTotal[reportTotal$Country.or.region == "France",]
 
-france
+
+france <- filter(reportTotal, Country.or.region == "France")
+
+g <- ggplot(france, aes(x = Year, y = Overall.rank)) + 
+  geom_line() 
 
 
+percentChange <- reportTotal[,4:9]
+
+library(scales)
+f1 <- france
+
+for( i in 1:5){
+  for(k in 2:9){
+    f1[i,k] <- (as.numeric(as.character(france[i,k])) - as.numeric(as.character(france[5,k])))/ as.numeric(as.character(france[5,k]))
+  }
+}
+
+
+g
 
 
 
 ```
 
 
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#load necessary libraries
+library(ggplot2)
+library(reshape2)
+
+
+f <- f1[4:10]
+f <- melt(f, id.vars = 'Year', variable.name= 'series')
+
+f$value <- as.numeric(f$value)
+
+
+ggplot(f, aes(Year, value)) +
+  geom_line(aes(colour = series)) +
+  geom_point(aes(colour = series)) +
+  scale_y_continuous(labels = scales::percent) +
+  facet_wrap(~series)
+
+```
+
+
+
 ## Continent
 
 trends by continent
-- (con) no region data in the dataset
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE }
@@ -101,13 +151,43 @@ report2019 <- merge(x=report2019,y=ccodes()[,c('NAME','UNREGION1','continent')],
       by.y=c("NAME"),
       all.x=TRUE)
 
-stats <- report2019 %>% 
-          group_by(continent) %>% 
+stats <- reportTotal %>% 
+          group_by(continent, Year) %>% 
           summarize_all(mean)
-stats
 
+
+
+
+ggplot(stats, aes(Year, Score, group_by(continent))) +
+  geom_line(aes(colour = continent)) +
+  geom_point(aes(colour = continent))
 
 ```
+
+<h2> Change in Rank</h2>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE }
+
+report <- merge(x = report2019, y = report2015, by = "Country.or.region", all = TRUE)
+
+report["Change.in.Rank"] <- report[,"Overall.rank.x"] - report[,"Overall.rank.y"]
+
+report <- report[order(report$Change.in.Rank),]
+report <- na.omit(report)
+
+
+ggplot(report[c(1:10, 135:145),], aes(x=reorder(Country.or.region, Change.in.Rank), y=Change.in.Rank)) + 
+  geom_bar(stat='identity', aes(fill="Overall.rank.x"), width=.5)  +
+  labs(title= "Change in rank from 2015 - 2019", subtitle="Showing highest/lowest changes") + 
+  coord_flip()
+  
+
+myVar = "Madam Duck"
+
+```
+
+
+<h1>`r myVar`</h1>
 
 
 #
