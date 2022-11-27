@@ -1,6 +1,6 @@
 ---
 title: "GGPlot Project"
-author: "Olivia & Yulia"
+author: "Olivia  & Yulia"
 date: '2022-11-22'
 output: html_document
 editor_options: 
@@ -24,11 +24,15 @@ library(flexdashboard)
 library(paletteer)
 library(mgcv)
 
+
+# Read in Happiness Report data
+ 
 report2019 <- read.csv("HappinessReport/2019.csv", header = TRUE, sep = ",")
 report2018 <- read.csv("HappinessReport/2018.csv", header = TRUE, sep = ",")
 report2017 <- read.csv("HappinessReport/2017.csv", header = TRUE, sep = ",")
 report2016 <- read.csv("HappinessReport/2016.csv", header = TRUE, sep = ",")
 report2015 <- read.csv("HappinessReport/2015.csv", header = TRUE, sep = ",")
+# Add a year column to each data set
 report2019$Year <- 2019
 report2018$Year <- 2018
 report2017$Year <- 2017
@@ -41,6 +45,7 @@ selectColumns <- c("Happiness.Rank", "Country",'Happiness.Score', 'Economy..GDP.
 columns <- c('Overall.rank', 'Country.or.region','Score','GDP.per.capita','Social.support','Healthy.life.expectancy','Freedom.to.make.life.choices','Generosity','Perceptions.of.corruption', 'Year')
 
 
+# Standardize all column names and categories
 report2015 <- report2015[,selectColumns]
 report2016 <- report2016[,selectColumns]
 report2017 <- report2017[,selectColumns]
@@ -48,9 +53,10 @@ colnames(report2015) <- columns
 colnames(report2016) <- columns
 colnames(report2017) <- columns
 
-
+# Create one data frame with all years combined
 reportTotal <- rbind(report2016, report2015, report2017, report2018, report2019)
 
+# Add continent column for later analysis 
 reportTotal <- merge(x=reportTotal,y=ccodes()[,c('NAME','UNREGION1','continent')], 
       by.x=c("Country.or.region"), 
       by.y=c("NAME"),
@@ -59,7 +65,6 @@ reportTotal <- merge(x=reportTotal,y=ccodes()[,c('NAME','UNREGION1','continent')
 
 
 # Update Country Names only for the map graph - reference with report2019a
-
 report2019a <- report2019
 
 report2019a[report2019a$Country.or.region=="United States", "Country.or.region"] <- "USA"
@@ -72,8 +77,13 @@ report2019a
 ```
 
 # World Happiness Report {.tabset .tabset-fade}
+<br>
+In 2012 the United Nations published the first results of the World Happiness Report, a first of its kind initiative to track the state of different countries around the world. Data is obtained from the Gallup World Poll. The report includes over 150 countries and measures different variables relating to well-being. Some of these variables include GDP, perceptions of corruption, generosity, social support, and more. 
 
-<!-- comment -->
+
+The data set used to create the graphs below was obtained from [Kaggle](https://www.kaggle.com/datasets/unsdsn/world-happiness?resource=download) and includes the years from 2015 to 2019. 
+
+<br>
 
 ## Overview
 
@@ -86,7 +96,7 @@ happy countries have a darker shade of blue.
 
 **Happiness Index Map, 2019**
 
-```{r map, echo=FALSE, message=FALSE, warning=FALSE}
+```{r map, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12}
 
 world_map = map_data("world") %>% 
   filter(! long > 180)
@@ -122,9 +132,7 @@ in each category.
 ```
 
 <h3 class="header">
-
 Top 3 happiest countries
-
 </h3>
 
 ```{r leaders, fig.align='center', echo=FALSE, fig.height=2, warning=FALSE}
@@ -135,6 +143,8 @@ score_top3 <- report2019a %>% arrange(desc(Score))
 score_top3 <- score_top3 %>% dplyr::select("Country.or.region","Score")
 score_top3 <- score_top3[1:3,]
 
+
+# Function that formats the top three countries of selected categories
 createValueBoxes <- function(df, h = 4, w = 6, padding=0.5, rows = 1){
   
   boxes = nrow(df) # number of items passed
@@ -351,42 +361,118 @@ happy in comparison to the least happy countries. The division is very
 high, regardless of inequality in distribution between some categories.
 
 ## France
+<br>
 
+France is displayed here for the purposes of viewing data from an individual country in the data set. For the years 2015 to 2019, France has consistently ranked among the top 25% in the World Happiness Report, it's ranking ranging from 32 to 24 (where a low score indicates a higher ranking of happiness in relation to other countries in the survey).
+
+<br>
+
+<h3> France Rank 2015-2019 </h3>
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-france <- reportTotal[reportTotal$Country.or.region == "France",]
+france <- filter(reportTotal, Country.or.region == "France")
 
-france
+ggplot(france, aes(x = Year, y = Overall.rank)) + 
+    geom_line() +
+    scale_y_reverse()
+
+```
+<br>
+<h3> Change percentage by category</h3>
+<br>
+
+The following graphs represent the six different metrics used to gauge the overall Happiness Score of France. The graph represent the percentage of change in each category. 
 
 
+With a brief glance at the charts, we may observe similar patterns among the categories in contrast to the overall ranking (displayed above). It appears that health & life expectancy, perception of corruption, and freedom to make life choices have similar trends in relation to the overall happiness score. On the other hand, it appears as though GDP per capita follows and opposite pattern, where the years with the highest score for gdp also represent the years with the lowest scores for overall happiness. 
+
+<br>
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=10}
+
+library(reshape2)
+library(scales)
+
+#Create copy to calculate percentages
+francePct <- france
+
+#For each column in all rows, calculate the percentage of the value as compared to 2015
+for( i in 1:5){
+  for(k in 2:9){
+    francePct[i,k] <- (as.numeric(as.character(france[i,k])) - as.numeric(as.character(france[5,k])))/ as.numeric(as.character(france[5,k]))
+  }
+}
+
+# Select only the columns we want
+francePct <- francePct[4:10]
+# "melt" data so that each row is a unique id-variable combination
+francePct <- melt(francePct, id.vars = 'Year', variable.name= 'series')
+
+#Change data type to numeric to perform calculations
+francePct$value <- as.numeric(francePct$value)
+
+# plot a line graph for each different category
+ggplot(francePct, aes(Year, value)) +
+  geom_line(aes(colour = series)) +
+  geom_point(aes(colour = series)) +
+  scale_y_continuous(labels = scales::percent) +
+  facet_wrap(~series)
 
 ```
 
-## Trends
 
-<h2>Countries with the highest progression</h2>
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-library(flexdashboard)
-
-
-
-```
 
 ## Continent
 
-trends by continent
 
-```{r echo=FALSE}
-reportTotal
+<h3>Average happiness score by continent from 2015 - 2019</h3>
+<br>
+The continent with the highest average happiness score is Oceania (Australia and New Zealand). The continent with the lowest is Africa, though it does show a slight increase in it's score over the years. South America shows the greatest decrease in score. 
+<br>
+```{r echo=FALSE, message=FALSE, warning=FALSE }
+
+report2019 <- merge(x=report2019,y=ccodes()[,c('NAME','UNREGION1','continent')], 
+      by.x=c("Country.or.region"), 
+      by.y=c("NAME"),
+      all.x=TRUE)
+
+report2019 <- na.omit(report2019)
+
+# Get the mean of each category for each continent for each year
+stats <- reportTotal %>% 
+          group_by(continent, Year) %>% 
+          summarize_all(mean)
+
+
+ggplot(stats[1:30,], aes(Year, Score, group_by(continent))) +
+  geom_line(aes(colour = continent)) +
+  geom_point(aes(colour = continent))
+
 ```
 
-## Forecasting
+<h3> Change in rank from 2015 - 2019</h3>
+<br>
+
+**Note - Countries are ranked, therefore the higher the score, the lower the level of happiness for a country**
+
+The countries that have decreased in ranking the most are countries that are in the lower 30%.
+As shown below, the 3 countries with the greatest decrease in ranking are Venezuela, Zambia, and Lesotho. The 3 countries with the greatest improvement in ranking are Benin, Honduras, and Hungary. 
+<br>
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=10, fig.height=5}
+
+report <- merge(x = report2019, y = report2015, by = "Country.or.region", all = TRUE)
+
+report["Change.in.Rank"] <- report[,"Overall.rank.x"] - report[,"Overall.rank.y"]
+
+report <- report[order(report$Change.in.Rank),]
+report <- na.omit(report)
+
+
+ggplot(report[c(1:10, 135:145),], aes(x=reorder(Country.or.region, Change.in.Rank), y=Change.in.Rank, fill=Overall.rank.x)) + 
+  geom_bar(stat='identity', width=.5)  +
+  coord_flip()
+  
+
+```
+
 
 # 
-
-```{r}
-
-
-```
