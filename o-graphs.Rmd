@@ -1,0 +1,114 @@
+---
+title: "GGPlot Project"
+author: "Olivia & Yulia"
+date: '2022-11-22'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(tidyverse)
+library(kableExtra)
+library(ggthemes)
+library(sjmisc)
+library(raster)
+library(stringr)
+
+setwd("C:/Users/zales/Documents/BSB3/R/Margeurit David/Final Project/")
+
+report2019 <- read.csv("HappinessReport/2019.csv", header = TRUE, sep = ",")
+report2018 <- read.csv("HappinessReport/2018.csv", header = TRUE, sep = ",")
+report2017 <- read.csv("HappinessReport/2017.csv", header = TRUE, sep = ",")
+report2016 <- read.csv("HappinessReport/2016.csv", header = TRUE, sep = ",")
+report2015 <- read.csv("HappinessReport/2015.csv", header = TRUE, sep = ",")
+report2019$Year <- 2019
+report2018$Year <- 2018
+report2017$Year <- 2017
+report2016$Year <- 2016
+report2015$Year <- 2015
+
+
+selectColumns <- c("Happiness.Rank", "Country",'Happiness.Score', 'Economy..GDP.per.Capita.', 'Family', 'Health..Life.Expectancy.', 'Freedom', 'Generosity', 'Trust..Government.Corruption.', 'Year')
+
+columns <- c('Overall.rank', 'Country.or.region','Score','GDP.per.capita','Social.support','Healthy.life.expectancy','Freedom.to.make.life.choices','Generosity','Perceptions.of.corruption', 'Year')
+
+
+report2015 <- report2015[,selectColumns]
+report2016 <- report2016[,selectColumns]
+report2017 <- report2017[,selectColumns]
+colnames(report2015) <- columns
+colnames(report2016) <- columns
+colnames(report2017) <- columns
+
+
+reportTotal <- rbind(report2016, report2015, report2017, report2018, report2019)
+
+reportTotal <- merge(x=reportTotal,y=ccodes()[,c('NAME','UNREGION1','continent')], 
+      by.x=c("Country.or.region"), 
+      by.y=c("NAME"),
+      all.x=TRUE)
+
+
+
+# Update Country Names only for the map graph - reference with report2019a
+
+report2019a <- report2019
+
+report2019a[report2019a$Country.or.region=="United States", "Country.or.region"] <- "USA"
+report2019a[report2019a$Country.or.region=="United Kingdom", "Country.or.region"] <- "UK"
+report2019a[report2019a$Country.or.region=="Congo (Brazzaville)", "Country.or.region"] <- "Democratic Republic of the Congo"
+report2019[report2019a$Country.or.region=="Congo (Kinshasa)", "Country.or.region"] <- "Democratic Republic of the Congo"
+report2019a
+
+
+
+```
+
+
+
+
+# World Happiness Report {.tabset .tabset-fade}
+
+
+## France
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+france <- reportTotal[reportTotal$Country.or.region == "France",]
+
+france
+
+
+
+
+
+```
+
+
+## Continent
+
+trends by continent
+- (con) no region data in the dataset
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE }
+
+report2019 <- merge(x=report2019,y=ccodes()[,c('NAME','UNREGION1','continent')], 
+      by.x=c("Country.or.region"), 
+      by.y=c("NAME"),
+      all.x=TRUE)
+
+stats <- report2019 %>% 
+          group_by(continent) %>% 
+          summarize_all(mean)
+stats
+
+
+```
+
+
+#
+

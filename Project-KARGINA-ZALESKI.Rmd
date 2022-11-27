@@ -3,16 +3,24 @@ title: "GGPlot Project"
 author: "Olivia & Yulia"
 date: '2022-11-22'
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
+knitr::opts_chunk$set(echo = FALSE)
 library(ggplot2)
 library(tidyverse)
 library(kableExtra)
 library(ggthemes)
 library(sjmisc)
+library(raster)
+library(stringr)
+library(flexdashboard)
+library(paletteer)
+library(mgcv)
+library(emojifont)
 
 
 report2019 <- read.csv("HappinessReport/2019.csv", header = TRUE, sep = ",")
@@ -20,28 +28,60 @@ report2018 <- read.csv("HappinessReport/2018.csv", header = TRUE, sep = ",")
 report2017 <- read.csv("HappinessReport/2017.csv", header = TRUE, sep = ",")
 report2016 <- read.csv("HappinessReport/2016.csv", header = TRUE, sep = ",")
 report2015 <- read.csv("HappinessReport/2015.csv", header = TRUE, sep = ",")
+report2019$Year <- 2019
+report2018$Year <- 2018
+report2017$Year <- 2017
+report2016$Year <- 2016
+report2015$Year <- 2015
 
-report2019[report2019$Country.or.region=="United States", "Country.or.region"] <- "USA"
-report2019[report2019$Country.or.region=="United Kingdom", "Country.or.region"] <- "UK"
-report2019[report2019$Country.or.region=="Congo (Brazzaville)", "Country.or.region"] <- "Democratic Republic of the Congo"
-report2019[report2019$Country.or.region=="Congo (Kinshasa)", "Country.or.region"] <- "Democratic Republic of the Congo"
-report2019
+
+selectColumns <- c("Happiness.Rank", "Country",'Happiness.Score', 'Economy..GDP.per.Capita.', 'Family', 'Health..Life.Expectancy.', 'Freedom', 'Generosity', 'Trust..Government.Corruption.', 'Year')
+
+columns <- c('Overall.rank', 'Country.or.region','Score','GDP.per.capita','Social.support','Healthy.life.expectancy','Freedom.to.make.life.choices','Generosity','Perceptions.of.corruption', 'Year')
+
+
+report2015 <- report2015[,selectColumns]
+report2016 <- report2016[,selectColumns]
+report2017 <- report2017[,selectColumns]
+colnames(report2015) <- columns
+colnames(report2016) <- columns
+colnames(report2017) <- columns
+
+
+reportTotal <- rbind(report2016, report2015, report2017, report2018, report2019)
+
+reportTotal <- merge(x=reportTotal,y=ccodes()[,c('NAME','UNREGION1','continent')], 
+      by.x=c("Country.or.region"), 
+      by.y=c("NAME"),
+      all.x=TRUE)
+
+
+
+# Update Country Names only for the map graph - reference with report2019a
+
+report2019a <- report2019
+
+report2019a[report2019a$Country.or.region=="United States", "Country.or.region"] <- "USA"
+report2019a[report2019a$Country.or.region=="United Kingdom", "Country.or.region"] <- "UK"
+report2019a[report2019a$Country.or.region=="Congo (Brazzaville)", "Country.or.region"] <- "Democratic Republic of the Congo"
+report2019[report2019a$Country.or.region=="Congo (Kinshasa)", "Country.or.region"] <- "Democratic Republic of the Congo"
+report2019a
+
 
 ```
 
 # World Happiness Report {.tabset .tabset-fade}
 
-
 <!-- comment -->
 
-## Country Map
+## Overview
 
 ```{r map, echo=FALSE, message=FALSE, warning=FALSE}
 
 world_map = map_data("world") %>% 
   filter(! long > 180)
 
-report2019 %>% 
+report2019a %>% 
   ggplot(aes(fill = Score, map_id = Country.or.region)) +
   geom_map(map = world_map) +
   expand_limits(x = world_map$long, y = world_map$lat) +
@@ -50,8 +90,153 @@ report2019 %>%
 
 ```
 
-## Top 10
+insert here - top 3 of each category for 2019
 
+#Leaders
+
+```{r leaders, echo=FALSE, warning=FALSE}
+
+score_top3[1] <- report2019a %>% arrange(desc(Score))
+score_top3 <- score_top3 %>% dplyr::select("Country.or.region","Score")
+score_top3 <- score_top3[1:3, 1:2]
+
+createValueBoxes <- function(df, h = 4, w = 6, padding=0.5, rows = 1){
+  
+  boxes = nrow(df) # number of items passed
+    # calculate the grid
+  cols = 3
+    
+  df <- data.frame(
+      x = rep(seq(0, (w+padding)*cols-1, w+padding), times=rows),
+      y = rep(seq(0, (h+padding)*rows-1, h+padding), each=cols),
+      h = rep(h, boxes),
+      w = rep(w, boxes),
+      value = df[[2]],
+      info = df[[1]],
+      font_family = c(rep("fontawesome-webfont", 5),
+                      "EmojiOne"),
+      color = factor(1:3)
+  )
+  
+  ggplot(df, aes(x, y, height = h, width = w, label = info)) +
+      ## Create the tiles using the `color` column
+      geom_tile(aes(fill = color)) +
+      ## Add the numeric values as text in `value` column
+      geom_text(color = "white", fontface = "bold", size = 10,
+                aes(label = value, x = x - 2.9, y = y + 1), hjust = 0) +
+      ## Add the labels for each box stored in the `info` column
+      geom_text(color = "white", fontface = "bold",
+                aes(label = info, x = x - 2.9, y = y - 1), hjust = 0) +
+      coord_fixed() +
+      scale_fill_brewer(type = "qual",palette = "Dark2") +
+      ## Use `geom_text()` to add the icons by specifying the unicode symbol.
+      theme_void() +
+      guides(fill = FALSE)
+}
+createValueBoxes(score_top3)
+
+```
+
+#I.GDP per capita
+
+```{r echo=FALSE}
+
+gdp_top3 <- report2019a %>% arrange(desc(GDP.per.capita))
+gdp_top3 <- gdp_top3 %>% dplyr::select("Country.or.region","GDP.per.capita")
+gdp_top3 <- gdp_top3[1:3, 1:2]
+
+createValueBoxes(gdp_top3)
+
+```
+
+#II.Social support
+
+```{r echo=FALSE}
+
+socsup_top3 <- report2019a %>% arrange(desc(Social.support))
+socsup_top3 <- socsup_top3 %>% dplyr::select("Country.or.region","Social.support")
+socsup_top3 <- socsup_top3[1:3, 1:2]
+
+createValueBoxes(socsup_top3)
+
+```
+
+#III.Healthy life expectency
+
+```{r echo=FALSE}
+
+health_top3 <- report2019a %>% arrange(desc(Healthy.life.expectancy))
+health_top3 <- health_top3 %>% dplyr::select("Country.or.region","Healthy.life.expectancy")
+health_top3 <- health_top3[1:3, 1:2]
+
+createValueBoxes(health_top3)
+
+```
+
+#IV.Freedom to make life choices
+
+```{r echo=FALSE}
+
+freedom_top3 <- report2019a %>% arrange(desc(Freedom.to.make.life.choices))
+freedom_top3 <- freedom_top3 %>% dplyr::select("Country.or.region","Freedom.to.make.life.choices")
+freedom_top3 <- freedom_top3[1:3, 1:2]
+
+createValueBoxes(freedom_top3)
+
+```
+
+#V.Generosity
+
+```{r echo=FALSE}
+
+generosity_top3 <- report2019a %>% arrange(desc(Generosity))
+generosity_top3 <- generosity_top3 %>% dplyr::select("Country.or.region","Generosity")
+generosity_top3 <- generosity_top3[1:3, 1:2]
+
+createValueBoxes(generosity_top3)
+
+```
+
+#V.Perception of corruption
+
+```{r echo=FALSE}
+
+corruption_top3 <- report2019a %>% arrange(desc(Perceptions.of.corruption))
+corruption_top3 <- corruption_top3 %>% dplyr::select("Country.or.region","Perceptions.of.corruption")
+corruption_top3 <- corruption_top3[1:3, 1:2]
+
+createValueBoxes(corruption_top3)
+
+```
+
+## Top/Bottom 10
+
+To do:
+
+-   Insert two grids of top/bottom scores, usung kaggle gradient
+    coloring]
+
+```{r topbottom10, echo=FALSE, message=FALSE, warning=FALSE}
+
+topbottomtable <- report2019a[c(1:10, (nrow(report2019a)-9):nrow(report2019a)),]
+
+#Create kabble
+
+kbl(topbottomtable, booktabs = T, linesep = "", align = "c", caption = "Summary Table") %>%
+  kable_styling(full_width = F) %>%
+  kable_styling(font_size = 12, position = "center") %>% 
+  kable_styling(latex_options = "hold_position") %>% 
+  column_spec(4, color = "white", background = spec_color(topbottomtable$Score, end = 0.9, option = "viridis")) %>% 
+  column_spec(5, color = "white", background = spec_color(topbottomtable$GDP.per.capita, end = 0.9, option = "viridis")) %>% 
+  column_spec(6, color = "white", background = spec_color(topbottomtable$Social.support, end = 0.9, option = "viridis")) %>% 
+  column_spec(7, color = "white", background = spec_color(topbottomtable$Healthy.life.expectancy, end = 0.9, option = "viridis")) %>% 
+  column_spec(8, color = "white", background = spec_color(topbottomtable$Freedom.to.make.life.choices, end = 0.9, option = "viridis")) %>% 
+  column_spec(9, color = "white", background = spec_color(topbottomtable$Generosity, end = 0.9, option = "viridis")) %>% 
+  column_spec(10, color = "white", background = spec_color(topbottomtable$Perceptions.of.corruption, end = 0.9, option = "viridis"))
+
+
+
+```
 
 ```{r top10, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -62,40 +247,48 @@ report2019[c(1:10, (nrow(report2019)-9):nrow(report2019)),]  %>%
   geom_hline(yintercept = mean(report2019$Score))
 
 
-```
 
+
+```
 
 ## France
 
-
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-fr19 <- report2019[report2019$Country.or.region == "France",]
-fr18 <- report2018[report2018$Country.or.region == "France",]
-fr17 <- report2017[report2017$Country.or.region == "France",]
-fr16 <- report2016[report2016$Country.or.region == "France",]
-fr15 <- report2015[report2015$Country.or.region == "France",]
-france <- tibble(fr19)
+france <- reportTotal[reportTotal$Country.or.region == "France",]
 
 france
 
-data("countries")
-data("mtcars")
-```
 
+
+```
 
 ## Trends
 
-
 <h2>Countries with the highest progression</h2>
 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+library(flexdashboard)
+
+
+
+```
 
 ## Continent
 
 trends by continent
-- (con) no region data in the dataset
+
+```{r echo=FALSE}
+reportTotal
+```
+
+## Forecasting
+
+# 
+
+```{r}
 
 
-
-#
+```
 
