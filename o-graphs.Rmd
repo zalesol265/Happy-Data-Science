@@ -3,11 +3,20 @@ title: "GGPlot Project"
 author: "Olivia & Yulia"
 date: '2022-11-22'
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
+<style>
 
-```{r setup, include=FALSE }
-knitr::opts_chunk$set(echo = TRUE)
+.header{
+  text-align: center;
+}
 
+
+</style>
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
 library(ggplot2)
 library(tidyverse)
 library(kableExtra)
@@ -15,8 +24,11 @@ library(ggthemes)
 library(sjmisc)
 library(raster)
 library(stringr)
+library(flexdashboard)
+library(paletteer)
+library(mgcv)
+library(emojifont)
 
-setwd("C:/Users/zales/Documents/BSB3/R/Margeurit David/Final Project/")
 
 report2019 <- read.csv("HappinessReport/2019.csv", header = TRUE, sep = ",")
 report2018 <- read.csv("HappinessReport/2018.csv", header = TRUE, sep = ",")
@@ -63,42 +75,228 @@ report2019[report2019a$Country.or.region=="Congo (Kinshasa)", "Country.or.region
 report2019a
 
 
-
-reportTotal[reportTotal$Country.or.region=="Congo (Brazzaville)", "Country.or.region"] <- "Democratic Republic of the Congo"
-reportTotal[reportTotal$Country.or.region=="Congo (Kinshasa)", "Country.or.region"] <- "Democratic Republic of the Congo"
-reportTotal[reportTotal$Country.or.region=="Ivory Coast", "Country.or.region"] <- "Côte d'Ivoire"
-reportTotal[reportTotal$Country.or.region=="Palestinian Territories", "Country.or.region"] <- "Palestina"
-reportTotal[reportTotal$Country.or.region=="Trinidad & Tobago", "Country.or.region"] <- "Trinidad and Tobago"
-
-reportTotal[reportTotal$Country.or.region=="North Cyprus", "Country.or.region"] <- "Northern Cyprus"
-reportTotal
-
-
 ```
-
-
-
 
 # World Happiness Report {.tabset .tabset-fade}
 
 
-## France
 
+In 2012 the United Nations published the first results of the World Happiness Report, a first of its kind initiative to track the state of different countries around the world. Data is obtained from the Gallup World Poll. The report includes over 150 countries and measures different variables relating to well-being. Some of these variables include GDP, perceptions of corruption, generosity, social support, and more. 
+
+
+The data set used to create the graphs below was obtained from [Kaggle](https://www.kaggle.com/datasets/unsdsn/world-happiness?resource=download) and includes the years from 2015 to 2019. 
+
+<br>
+
+## Overview
+
+```{r map, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12}
+
+world_map = map_data("world") %>% 
+  filter(! long > 180)
+
+report2019a %>% 
+  ggplot(aes(fill = Score, map_id = Country.or.region)) +
+  geom_map(map = world_map) +
+  expand_limits(x = world_map$long, y = world_map$lat) +
+  coord_map("moll") +
+  theme_map()
+
+```
+
+<h1> Which Countries Rank the Top 3 in Each Category? </h1>
+
+<h2 class="header">Top Happiness Scores</h2>
+
+```{r leaders, echo=FALSE, warning=FALSE}
+
+score_top3 <- report2019a %>% arrange(desc(Score))
+score_top3 <- score_top3 %>% dplyr::select("Country.or.region","Score")
+score_top3 <- score_top3[1:3, 1:2]
+
+createValueBoxes <- function(df, h = 4, w = 6, padding=.5, rows = 1){
+  
+  boxes = nrow(df) # number of items passed
+    # calculate the grid
+  cols = 3
+    
+  df <- data.frame(
+      x = rep(seq(0, (w+padding)*cols-1, w+padding), times=rows),
+      y = rep(seq(0, (h+padding)*rows-1, h+padding), each=cols),
+      h = rep(h, boxes),
+      w = rep(w, boxes),
+      value = df[[2]],
+      info = df[[1]],
+      font_family = c(rep("fontawesome-webfont", 5),
+                      "EmojiOne"),
+      color = factor(1:3)
+  )
+  
+  ggplot(df, aes(x, y, height = h, width = w, label = info)) +
+      ## Create the tiles using the `color` column
+      geom_tile(aes(fill = color)) +
+      ## Add the numeric values as text in `value` column
+      geom_text(color = "white", fontface = "bold", size = 18,
+                aes(label = value, x = x - 2.9, y = y + 1), hjust = 0) +
+      ## Add the labels for each box stored in the `info` column
+      geom_text(color = "white", fontface = "bold", size = 16,
+                aes(label = info, x = x - 2.9, y = y - 1), hjust = 0) +
+      coord_fixed() +
+      scale_fill_brewer(type = "qual",palette = "Dark2") +
+      ## Use `geom_text()` to add the icons by specifying the unicode symbol.
+      theme_void() +
+      guides(fill = FALSE)
+}
+createValueBoxes(score_top3)
+
+```
+
+<h2>I. GDP per capita</h2>
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-france <- reportTotal[reportTotal$Country.or.region == "France",]
+gdp_top3 <- report2019a %>% arrange(desc(GDP.per.capita))
+gdp_top3 <- gdp_top3 %>% dplyr::select("Country.or.region","GDP.per.capita")
+gdp_top3 <- gdp_top3[1:3, 1:2]
 
+createValueBoxes(gdp_top3)
+
+```
+
+<h2>II. Social support</h2>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+socsup_top3 <- report2019a %>% arrange(desc(Social.support))
+socsup_top3 <- socsup_top3 %>% dplyr::select("Country.or.region","Social.support")
+socsup_top3 <- socsup_top3[1:3, 1:2]
+
+createValueBoxes(socsup_top3)
+
+```
+
+<h2>III. Healthy life expectancy</h2>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+health_top3 <- report2019a %>% arrange(desc(Healthy.life.expectancy))
+health_top3 <- health_top3 %>% dplyr::select("Country.or.region","Healthy.life.expectancy")
+health_top3 <- health_top3[1:3, 1:2]
+
+createValueBoxes(health_top3)
+
+```
+
+<h2>IV. Freedom to make life choices</h2>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+freedom_top3 <- report2019a %>% arrange(desc(Freedom.to.make.life.choices))
+freedom_top3 <- freedom_top3 %>% dplyr::select("Country.or.region","Freedom.to.make.life.choices")
+freedom_top3 <- freedom_top3[1:3, 1:2]
+
+createValueBoxes(freedom_top3)
+
+```
+
+<h2>V. Generosity</h2>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+generosity_top3 <- report2019a %>% arrange(desc(Generosity))
+generosity_top3 <- generosity_top3 %>% dplyr::select("Country.or.region","Generosity")
+generosity_top3 <- generosity_top3[1:3, 1:2]
+
+createValueBoxes(generosity_top3)
+
+```
+
+<h2>VI. Perception of corruption</h2>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+corruption_top3 <- report2019a %>% arrange(desc(Perceptions.of.corruption))
+corruption_top3 <- corruption_top3 %>% dplyr::select("Country.or.region","Perceptions.of.corruption")
+corruption_top3 <- corruption_top3[1:3, 1:2]
+
+createValueBoxes(corruption_top3)
+
+```
+
+## Top/Bottom 10
+
+To do:
+
+-   Insert two grids of top/bottom scores, usung kaggle gradient
+    coloring]
+
+```{r topbottom10, echo=FALSE, message=FALSE, warning=FALSE}
+
+topbottomtable <- report2019a[c(1:10, (nrow(report2019a)-9):nrow(report2019a)),]
+
+#Create kabble
+
+kbl(topbottomtable, booktabs = T, linesep = "", align = "c", caption = "Summary Table") %>%
+  kable_styling(full_width = F) %>%
+  kable_styling(font_size = 12, position = "center") %>% 
+  kable_styling(latex_options = "hold_position") %>% 
+  column_spec(4, color = "white", background = spec_color(topbottomtable$Score, end = 0.9, option = "viridis")) %>% 
+  column_spec(5, color = "white", background = spec_color(topbottomtable$GDP.per.capita, end = 0.9, option = "viridis")) %>% 
+  column_spec(6, color = "white", background = spec_color(topbottomtable$Social.support, end = 0.9, option = "viridis")) %>% 
+  column_spec(7, color = "white", background = spec_color(topbottomtable$Healthy.life.expectancy, end = 0.9, option = "viridis")) %>% 
+  column_spec(8, color = "white", background = spec_color(topbottomtable$Freedom.to.make.life.choices, end = 0.9, option = "viridis")) %>% 
+  column_spec(9, color = "white", background = spec_color(topbottomtable$Generosity, end = 0.9, option = "viridis")) %>% 
+  column_spec(10, color = "white", background = spec_color(topbottomtable$Perceptions.of.corruption, end = 0.9, option = "viridis"))
+
+
+
+```
+
+```{r top10, echo=FALSE, message=FALSE, warning=FALSE}
+
+report2019[c(1:10, (nrow(report2019)-9):nrow(report2019)),]  %>% 
+  ggplot(aes(x=reorder(Country.or.region,-Score,sum), y=Score, fill = Score)) +
+  geom_bar(stat="summary", fun="mean") + 
+  coord_flip() +
+  geom_hline(yintercept = mean(report2019$Score))
+
+
+
+
+```
+
+## France
+<br>
+
+France is displayed here for the purposes of viewing data from an individual country in the data set. For the years 2015 to 2019, France has consistently ranked among the top 25% in the World Happiness Report, it's ranking ranging from 32 to 24 (where a low score indicates a higher ranking of happiness in relation to other countries in the survey).
+
+<br>
+
+<h3> France Rank 2015-2019 </h3>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 france <- filter(reportTotal, Country.or.region == "France")
 
-g <- ggplot(france, aes(x = Year, y = Overall.rank)) + 
-  geom_line() 
+ggplot(france, aes(x = Year, y = Overall.rank)) + 
+    geom_line() +
+    scale_y_reverse()
+
+```
+<br>
+<h3> Change percentage by category</h3>
+<br>
+
+The following graphs represent the six different metrics used to gauge the overall Happiness Score of France. The graph represent the percentage of change in each category. 
 
 
-percentChange <- reportTotal[,4:9]
+With a brief glance at the charts, we may observe similar patterns among the categories in contrast to the overall ranking (displayed above). It appears that health & life expectancy, perception of corruption, and freedom to make life choices have similar trends in relation to the overall happiness score. On the other hand, it appears as though GDP per capita follows and opposite pattern, where the years with the highest score for gdp also represent the years with the lowest scores for overall happiness. 
 
+<br>
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=10}
+
+library(reshape2)
 library(scales)
+
 f1 <- france
 
 for( i in 1:5){
@@ -106,22 +304,6 @@ for( i in 1:5){
     f1[i,k] <- (as.numeric(as.character(france[i,k])) - as.numeric(as.character(france[5,k])))/ as.numeric(as.character(france[5,k]))
   }
 }
-
-
-g
-
-
-
-```
-
-
-
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-#load necessary libraries
-library(ggplot2)
-library(reshape2)
-
 
 f <- f1[4:10]
 f <- melt(f, id.vars = 'Year', variable.name= 'series')
@@ -141,9 +323,11 @@ ggplot(f, aes(Year, value)) +
 
 ## Continent
 
-trends by continent
 
-
+<h3>Average happiness score by continent from 2015 - 2019</h3>
+<br>
+The continent with the highest average happiness score is Oceania (Australia and New Zealand). The continent with the lowest is Africa, though it does show a slight increase in it's score over the years. South America shows the greatest decrease in score. 
+<br>
 ```{r echo=FALSE, message=FALSE, warning=FALSE }
 
 report2019 <- merge(x=report2019,y=ccodes()[,c('NAME','UNREGION1','continent')], 
@@ -151,22 +335,28 @@ report2019 <- merge(x=report2019,y=ccodes()[,c('NAME','UNREGION1','continent')],
       by.y=c("NAME"),
       all.x=TRUE)
 
+report2019 <- na.omit(report2019)
+
 stats <- reportTotal %>% 
           group_by(continent, Year) %>% 
           summarize_all(mean)
 
 
-
-
-ggplot(stats, aes(Year, Score, group_by(continent))) +
+ggplot(stats[1:30,], aes(Year, Score, group_by(continent))) +
   geom_line(aes(colour = continent)) +
   geom_point(aes(colour = continent))
 
 ```
 
-<h2> Change in Rank</h2>
+<h3> Change in rank from 2015 - 2019</h3>
+<br>
+Below
+**Note - Countries are ranked, therefore the higher the score, the lower the level of happiness for a country**
 
-```{r echo=FALSE, message=FALSE, warning=FALSE }
+The countries that have decreased in ranking the most are countries that are in the lower 30%.
+As shown below, the 3 countries with the greatest decrease in ranking are Venezuela, Zambia, and Lesotho. The 3 countries with the greatest improvement in ranking are Benin, Honduras, and Hungary. 
+<br>
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=10, fig.height=5}
 
 report <- merge(x = report2019, y = report2015, by = "Country.or.region", all = TRUE)
 
@@ -176,19 +366,15 @@ report <- report[order(report$Change.in.Rank),]
 report <- na.omit(report)
 
 
-ggplot(report[c(1:10, 135:145),], aes(x=reorder(Country.or.region, Change.in.Rank), y=Change.in.Rank)) + 
-  geom_bar(stat='identity', aes(fill="Overall.rank.x"), width=.5)  +
-  labs(title= "Change in rank from 2015 - 2019", subtitle="Showing highest/lowest changes") + 
+ggplot(report[c(1:10, 135:145),], aes(x=reorder(Country.or.region, Change.in.Rank), y=Change.in.Rank, fill=Overall.rank.x)) + 
+  geom_bar(stat='identity', width=.5)  +
   coord_flip()
   
-
-myVar = "Madam Duck"
 
 ```
 
 
-<h1>`r myVar`</h1>
+# 
 
 
-#
 
